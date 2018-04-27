@@ -4452,18 +4452,22 @@ echo "running codes to setup interface ports with fixed IP addresses"
 network_id=`openstack network show -f shell flat-lan-1-net | grep "^id=" | cut -d'"' -f 2`
 subnet_id=`openstack network show -f shell flat-lan-1-net | grep "^subnets=" | cut -d'"' -f 2`
 
-
+echo "Your OpenStack instance is downloading image ." \
+    |  mail -s "OpenStack Instance update" ${SWAPPER_EMAIL} &
+    
 # download image
 # See https://docs.openstack.org/project-install-guide/baremetal/draft/configure-glance-images.html
-wget -O /tmp/setup/OL7.vmdk https://clemson.box.com/shared/static/r9ssykoseqd6x8n7m72ppemfrp2vtu1a.vmdk
+wget -O /tmp/setup/OL7.vmdk https://clemson.box.com/shared/static/lopiorlt1pke9zm1c9ty1ioiqbh1s79i.vmdk
 glance image-create --name OL7 --disk-format vmdk --visibility public --container-format bare < /tmp/setup/OL7.vmdk
+rm /tmp/setup/OL7.vmdk
 
 # See https://docs.openstack.org/python-openstackclient/pike/cli/command-objects/port.html
 openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.21 testport1
 openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.22 testport2
 openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.23 testport3
 openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.24 testport4
-
+openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.25 testport5
+openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.26 testport6
 
 project_id=`openstack project list -f value | grep admin | cut -d' ' -f 1`
 flavor_id=`openstack flavor list -f value | grep m1.small | cut -d' ' -f 1`
@@ -4474,19 +4478,43 @@ security_id=`openstack security group list -f value | grep $project_id | cut -d'
 # headnode = testnode1
 image_id=`openstack image list -f value | grep OL7 | cut -d' ' -f 1`
 port_id=`openstack port list -f value | grep testport1 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id testnode1 &
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id hnode1 &
+glance image-delete $image_id
 
-# othernodes = testnode* (* = 2-9)
+#compute-image
+wget -O /tmp/setup/OL7.vmdk https://clemson.box.com/shared/static/kat1woufkc258wvu7yj744ou0n25a841.vmdk
+glance image-create --name OL7 --disk-format vmdk --visibility public --container-format bare < /tmp/setup/OL7.vmdk
+rm /tmp/setup/OL7.vmdk
+echo "head finished and cnodes start." \
+    |  mail -s "head finished and cnodes start." ${SWAPPER_EMAIL} &
+
+# compute_nodes = cnode2-4
 image_id=`openstack image list -f value | grep OL7 | cut -d' ' -f 1`
-
 port_id=`openstack port list -f value | grep testport2 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id testnode2 &
-
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode2 &
 port_id=`openstack port list -f value | grep testport3 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id testnode3 &
-
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode3 &
 port_id=`openstack port list -f value | grep testport4 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id testnode4 &
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode4 &
+
+glance image-delete $image_id
+
+
+
+#storage nodes
+wget -O /tmp/setup/OL7.vmdk https://clemson.box.com/shared/static/ucpt4dz2xmeiopnjeoldy5txfuls60io.vmdk
+glance image-create --name OL7 --disk-format vmdk --visibility public --container-format bare < /tmp/setup/OL7.vmdk
+rm /tmp/setup/OL7.vmdk
+
+echo "cnodes finished and snodes start." \
+    |  mail -s "c finished and s start." ${SWAPPER_EMAIL} &
+
+image_id=`openstack image list -f value | grep OL7 | cut -d' ' -f 1`
+port_id=`openstack port list -f value | grep testport5 | cut -d' ' -f 1`
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode5 &
+port_id=`openstack port list -f value | grep testport6 | cut -d' ' -f 1`
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode6 &
+
 
 wait
 
