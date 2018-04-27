@@ -4459,7 +4459,7 @@ echo "Your OpenStack instance is downloading image ." \
 # See https://docs.openstack.org/project-install-guide/baremetal/draft/configure-glance-images.html
 wget -O /tmp/setup/OL7.vmdk https://clemson.box.com/shared/static/lopiorlt1pke9zm1c9ty1ioiqbh1s79i.vmdk
 glance image-create --name OL7 --disk-format vmdk --visibility public --container-format bare < /tmp/setup/OL7.vmdk
-rm /tmp/setup/OL7.vmdk
+
 
 # See https://docs.openstack.org/python-openstackclient/pike/cli/command-objects/port.html
 openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.21 testport1
@@ -4470,7 +4470,7 @@ openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-
 openstack port create --network ${network_id} --fixed-ip subnet=${subnet_id},ip-address=10.11.10.26 testport6
 
 project_id=`openstack project list -f value | grep admin | cut -d' ' -f 1`
-flavor_id=`openstack flavor list -f value | grep m1.small | cut -d' ' -f 1`
+flavor_id=`openstack flavor list -f value | grep m1.medium | cut -d' ' -f 1`
 security_id=`openstack security group list -f value | grep $project_id | cut -d' ' -f 1`
 
 # See https://docs.openstack.org/mitaka/install-guide-ubuntu/launch-instance-selfservice.html
@@ -4478,42 +4478,43 @@ security_id=`openstack security group list -f value | grep $project_id | cut -d'
 # headnode = testnode1
 image_id=`openstack image list -f value | grep OL7 | cut -d' ' -f 1`
 port_id=`openstack port list -f value | grep testport1 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id hnode1 &
-glance image-delete $image_id
-
-#compute-image
-wget -O /tmp/setup/OL7.vmdk https://clemson.box.com/shared/static/kat1woufkc258wvu7yj744ou0n25a841.vmdk
-glance image-create --name OL7 --disk-format vmdk --visibility public --container-format bare < /tmp/setup/OL7.vmdk
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id hnode1
 rm /tmp/setup/OL7.vmdk
+glance image-delete --name OL7
 echo "head finished and cnodes start." \
     |  mail -s "head finished and cnodes start." ${SWAPPER_EMAIL} &
+    
+#compute-image
+wget -O /tmp/setup/Compute.vmdk https://clemson.box.com/shared/static/kat1woufkc258wvu7yj744ou0n25a841.vmdk
+glance image-create --name Compute --disk-format vmdk --visibility public --container-format bare < /tmp/setup/Compute.vmdk
+
+
 
 # compute_nodes = cnode2-4
-image_id=`openstack image list -f value | grep OL7 | cut -d' ' -f 1`
+image_id=`openstack image list -f value | grep Compute | cut -d' ' -f 1`
 port_id=`openstack port list -f value | grep testport2 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode2 &
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode2 
 port_id=`openstack port list -f value | grep testport3 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode3 &
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode3 
 port_id=`openstack port list -f value | grep testport4 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode4 &
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode4 
+rm /tmp/setup/Compute.vmdk
+glance image-delete Compute
 
-glance image-delete $image_id
-
-
+echo "cnode finished and storage start." \
+    |  mail -s "cnode finished and storage start." ${SWAPPER_EMAIL} 
+    
 
 #storage nodes
-wget -O /tmp/setup/OL7.vmdk https://clemson.box.com/shared/static/ucpt4dz2xmeiopnjeoldy5txfuls60io.vmdk
-glance image-create --name OL7 --disk-format vmdk --visibility public --container-format bare < /tmp/setup/OL7.vmdk
-rm /tmp/setup/OL7.vmdk
+wget -O /tmp/setup/Storage.vmdk https://clemson.box.com/shared/static/ucpt4dz2xmeiopnjeoldy5txfuls60io.vmdk
+glance image-create --name Storage --disk-format vmdk --visibility public --container-format bare < /tmp/setup/Storage.vmdk
+rm /tmp/setup/Storage.vmdk
 
-echo "cnodes finished and snodes start." \
-    |  mail -s "c finished and s start." ${SWAPPER_EMAIL} &
-
-image_id=`openstack image list -f value | grep OL7 | cut -d' ' -f 1`
+image_id=`openstack image list -f value | grep Storage | cut -d' ' -f 1`
 port_id=`openstack port list -f value | grep testport5 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode5 &
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode5 
 port_id=`openstack port list -f value | grep testport6 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode6 &
+openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode6 
 
 
 wait
