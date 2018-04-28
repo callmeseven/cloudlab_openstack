@@ -4502,13 +4502,13 @@ wait
 image_id=`openstack image list -f value | grep Compute | cut -d' ' -f 1`
 
 port_id=`openstack port list -f value | grep testport2 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode2 
+openstack server create --flavor m1.medium --security-group $security_id --image Compute --nic port-id=$port_id cnode2 
 
 port_id=`openstack port list -f value | grep testport3 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode3 
+openstack server create --flavor m1.medium --security-group $security_id --image Compute --nic port-id=$port_id cnode3 
 
 port_id=`openstack port list -f value | grep testport4 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id cnode4 
+openstack server create --flavor m1.medium --security-group $security_id --image Compute --nic port-id=$port_id cnode4 
 
 rm /tmp/setup/Compute.vmdk
 glance image-delete $image_id
@@ -4527,10 +4527,10 @@ echo "cnode finished and storage start." \
 image_id=`openstack image list -f value | grep Storage | cut -d' ' -f 1`
 
 port_id=`openstack port list -f value | grep testport5 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode5 
+openstack server create --flavor m1.medium --security-group $security_id --image Storage --nic port-id=$port_id snode5 
 
 port_id=`openstack port list -f value | grep testport6 | cut -d' ' -f 1`
-openstack server create --flavor m1.medium --security-group $security_id --image OL7 --nic port-id=$port_id snode6 
+openstack server create --flavor m1.medium --security-group $security_id --image Storage --nic port-id=$port_id snode6 
 
 wait
 
